@@ -1,0 +1,138 @@
+---
+title: "STAT 184 Final Project"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+
+##DW1. In CODGames_p1_184, what is a case? (No code chunk is necessary for this question.)
+
+##DW2  Write R code that will allow you stack the datasets for Player 1 and Player 2 on top of each other and add a variable named “Player” that will take a value of “Player 1” in the rows corresponding to Player 1’s data and a value of “Player 2” in the rows corresponding to Player 2’s data. Use the dataset created in this task for the remaining DW tasks
+
+```{r}
+library(dplyr)
+library(readr)
+CODGames_p2=read_csv("C:/Users/Laban/Downloads/CODGames_p1_184.csv")
+CODGames_p2
+CODGames_p1=read_csv("C:/Users/Laban/Downloads/CODGames_p2_184 (1).csv")
+CODGames_p1
+
+CODGames_p1["Player"]<- "player 1"
+CODGames_p2["Player"]<- "player 2"
+newCODGames=rbind(CODGames_p1,CODGames_p2)
+newCODGames
+```
+
+##DW3 . Remove matches in which the player only participated in a partial match* and/or matches with missing data for key metrics of player performance (such as a missing value for TotalXP).  How many rows remain? CAUTION: You cannot just use na.omit() on the entire dataset since every row has some missing data.
+
+```{r}
+newcodgames<- subset(newCODGames,FullPartial!= "Partial")
+newcodgames
+
+```
+After removing the partial values in the FullPartial variable, there remained about 730 rows or observations.
+
+##D4: Clean the GameType variable. Using the GameType variable, create two new variables
+```{r}
+newcodgames$GameType
+newcodgames$core<-ifelse(grepl("HC", newcodgames$GameType), "Core No", "Core Yes")
+newcodgames$mode<-gsub("HC - ", "", newcodgames$GameType)
+View(newcodgames)
+newcodgames[1:4, c("TotalXP", "GameType", "core", "mode")]
+```
+
+##D5: Display the first four rows of the resulting dataset, but only include the variables Result, TeamScore, OpponentScore, and TeamResult.
+```{r}
+newcodgames$TeamScore <- as.numeric(substr(newcodgames$Result, 1, nchar(newcodgames$Result)-3))
+
+newcodgames$OpponentScore <- as.numeric(substr(newcodgames$Result, nchar(newcodgames$Result)-1, nchar(newcodgames$Result))) 
+
+newcodgames$TeamResult <- ifelse(newcodgames$TeamScore > newcodgames$OpponentScore, "Win", 
+                      ifelse(newcodgames$TeamScore < newcodgames$OpponentScore, "Loss", "Draw"))
+# display first 4 rows
+head(newcodgames[, c("Result", "TeamScore", "OpponentScore", "TeamResult")], 4)
+```
+
+##D6: 
+```{r}
+library(readr)
+CODGameModes_1_ <- read_csv("C:/Users/Laban/Downloads/CODGameModes(1).csv")
+Finaldata<- merge(newcodgames,CODGameModes_1_)
+Finaldata$LimitReached <- ifelse( Finaldata$ScoreLimit <= Finaldata$TeamScore |                                                                  Finaldata$ScoreLimit <= Finaldata$TeamScore, "Yes", "No")
+
+head(Finaldata[, c("Result", "TeamScore", "OpponentScore","mode","ScoreLimit", "LimitReached")], 4)
+```
+
+##Requirements
+##Research Question 1: Does the amount of damage issued by the player depend on the Mode and/or Core?
+```{r}
+library(ggplot2)
+ggplot(data = newcodgames, aes(x = mode, y = Damage)) + geom_boxplot() + facet_wrap(~core)
+
+```
+
+Yes, the amount of damage issued by the player can depend on the Mode and/or Core. For example, in certain Modes and Cores, certain attacks may do more damage than they would in others. Additionally, certain Cores may have specific attacks that are only available in that Core, which can affect the amount of damage the player can do.
+
+##Research Question 2: Which Mode is least likely to reach the score limit? 
+```{r}
+# Create a dataframe to calculate the proportions of matches that reach the score limit
+df<- Finaldata %>% group_by(mode) %>% summarise(ScoreLimit = sum(TeamScore)) %>%      mutate(Score = n()) %>% 
+    mutate(prop_matches_score_limit = ScoreLimit / Score)
+# Plot the proportions of matches that reach the score limit for each mode
+ggplot(data = df, aes(x = mode, y = prop_matches_score_limit)) +
+  geom_bar(stat = "identity", fill = "#0080FF") + 
+  labs(x = "Mode", y = "Proportion of Matches Reaching Score Limit") +
+  ggtitle("Proportion of Matches Reaching Score Limit by Mode")
+
+```
+Research Question 3: Is the distribution of wins, losses, and draws different for Player 1 and Player 2? 
+```{r}
+# Calculate the proportion of wins, losses, and draws for each player
+player1_props<- Finaldata %>% filter(Player=="1") %>% group_by(TeamResult) %>% summarise(proportions=n()/NROW(Finaldata)*100) %>% mutate(Player ="player 1")
+player2_props<- Finaldata %>% filter(Player=="2") %>% group_by(TeamResult) %>% summarise(proportions=n()/NROW(Finaldata)*100) %>% mutate(Player ="player 2")
+props_combined <- rbind(player1_props, player2_props)
+ggplot(data = props_combined, aes(x=player1_props, y=player2_props)) + geom_abline()
+
+```
+
+Research Question 4: Write and answer your own research question using a data visualization
+What is the correlation between the teamscore, opponentscore and the gametype 
+
+```{r}
+#draw the scatter plot
+plot(Finaldata$TeamScore, Finaldata$OpponentScore, xlab= "Teamscore", ylab="opponentscore", main="scatterplot of teamscore and opponent score")
+
+#add third variable
+points(Finaldata$TeamScore,Finaldata$GameType)
+
+legend("topright", legend = c("TeamScore", "GameType"), col=c("black", "red"), pch=1)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
