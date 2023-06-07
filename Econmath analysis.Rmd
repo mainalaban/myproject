@@ -1,0 +1,107 @@
+---
+title: "Econmath analysis"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+The analysis uses "econmath" data set which is a built in data set that is the "wooldridge package". The analysis uses linear regression  model and due to the many predictor variables is therefore a multiple regression analysis.
+```{r}
+#starts by loading the package and then the data set.
+library(wooldridge)
+data("econmath")
+View(econmath)
+head(econmath)
+summary(econmath)
+hist(econmath$age)
+hist(econmath$study)
+```
+
+Requirement 1: Building the model
+In this part, we are treating the "score" variable as the dependent variable and the "coldpa", "study", and "calculus" variables as the indepedent variables. We shall therefore build a linear model and observe whether it fits the data well and is able to predict the score properly.
+
+```{r}
+#building the model
+library(stats)
+model1<- lm(score ~ colgpa + study + calculus, data = econmath)
+summary(model1)
+
+```
+
+From the above output of the model, it can be osbserved that only two of the variables are significant in explaining the model. That is only "colgpa" and "calculus" variables are statistically significant in explaining the response variable since the p-value is less than the specified level 0.05. The variable "study" is not statistically significant due to its greater value of p-value, therefore the coeffeicient B2 cause no effect to the score variabel.
+
+Requirement 2: Analysis of variance table
+```{r}
+anova(model1)
+
+```
+The total sum of squares in this case is sum of all the differences of predicted values and the mean of the observed values for the score variable it explains the variation in the observed. While the explained sum of squared exaplins the variation of the predicted values. The residuals sum of squares in this case tells us how the error term varies in our model.
+On the other hand, the adjusted R squared helps in determining whether a variable should be included in the regression or not and the accuracy of the model. In this case, due to the low value of the adjusted R Square, it shows that model is not that quite fit in modelling the data.
+
+Requirement 3: 
+Given the null hypothesis is B2 = 0, we are to test whether this is true.
+```{r}
+library(lmtest)
+summary(model1)
+#to get the p-value for two sided significance test 
+2 * pt(-0.904, df = 852)
+
+```
+
+By observing the p-value obtained (0.3662509), since the p-value is greater than 0.05, we fail to reject the null hypothesis and conclude that B2 is not statistically signifcant to the model at 0.05 level of significance.
+
+
+Requirement 4: Given the null hypothesis is B2 >- 1, we are to test whether this is true.
+```{r}
+#H0: B > -1
+#Ha: B ≤ -1
+#Significance level: 1%
+
+#Calculate the test statistic
+B <- -0.04260
+t <- (B + 1)/sqrt(0.25)
+
+#Calculate the critical value
+critical_value <- qt(0.01, df = Inf)
+
+#Calculate the p-value
+p_value <- pt(t, df = Inf)
+
+#Test Decision
+if (t > critical_value){
+  print("Reject the null hypothesis")
+} else {
+  print("Fail to reject the null hypothesis")
+}
+
+```
+We reject the null hpothesis.
+Economic Interpretation:
+The test suggests that there is evidence that the population mean return of the assets is lower than -1.
+
+Requirement 5: Given the null hypothesis is B2 = B1, we are to test whether this is true.
+```{r}
+
+# F-test
+
+# Ho: B2 = B1
+# Ha: B2 != B1
+
+# Set the significance level
+alpha = 0.05
+
+# Calculate the F-statistic
+f_stat = (-0.04260/13.77947)
+f_stat
+
+# Calculate the Critical Value
+crit_val = qf(1-alpha, df1=852-1, df2=852-1)
+
+# Compare the F-statistic to the Critical Value
+if (f_stat < crit_val) {
+  print("Reject Ho, B2 is not equal to B1")
+} else {
+  print("Fail to reject Ho, B2 is equal to B1")
+  }
+
+```
